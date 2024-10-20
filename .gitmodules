@@ -1,0 +1,12 @@
+[submodule "auth-service"]
+	path = auth-service
+	url = https://github.com/ykatrinka/auth-service.git
+[submodule "comments-service"]
+	path = comments-service
+	url = https://github.com/ykatrinka/comments-service.git
+[submodule news-service"]
+	path = news-service
+	url = https://github.com/ykatrinka/news-service.git
+[submodule server-config"]
+	path = server-config
+	url = https://github.com/ykatrinka/server-config.git

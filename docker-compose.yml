@@ -1,0 +1,120 @@
+version: "3.9"
+
+services:
+
+  news-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: "news_system"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    container_name: news-db
+    ports:
+      - "5432:5432"
+    networks:
+      - news-system
+
+  auth-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: "auth_db"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    container_name: auth-db
+    ports:
+      - "5433:5432"
+    networks:
+      - news-system
+
+
+  server-config:
+    image: hyness/spring-cloud-config-server
+    build:
+      context: ./server-config
+      dockerfile: Dockerfile
+    container_name: server-config
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_CLOUD_CONFIG_SERVER_GIT_URI: https://github.com/ykatrinka/news-cloud-config.git
+      SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL: master
+      JWT_SECRET: mtc3334dwMITX7fn5nveWDs8MTXyfmZ53JmdcySpd2o
+    networks:
+      - news-system
+
+
+  cache-redis:
+    image: redis:alpine
+    restart: on-failure
+    container_name: cache-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - cache:/data
+    networks:
+      - news-system
+
+
+  news-service:
+    image: news-service-image
+    container_name: news-service
+    build:
+      context: ./news-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: mtc3334dwMITX7fn5nveWDs8MTXyfmZ53JmdcySpd2o
+    depends_on:
+      - news-db
+      - cache-redis
+      - server-config
+    networks:
+      - news-system
+
+
+  comments-service:
+    image: comments-service-image
+    container_name: comments-service
+    build:
+      context: ./comments-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: mtc3334dwMITX7fn5nveWDs8MTXyfmZ53JmdcySpd2o
+    depends_on:
+      - news-db
+      - cache-redis
+      - server-config
+    networks:
+      - news-system
+
+
+  auth-service:
+    image: auth-service-image
+    container_name: auth-service
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: mtc3334dwMITX7fn5nveWDs8MTXyfmZ53JmdcySpd2o
+    depends_on:
+      - auth-db
+      - server-config
+    networks:
+      - news-system
+
+
+networks:
+  news-system:
+    driver: bridge
+
+
+volumes:
+  cache:
